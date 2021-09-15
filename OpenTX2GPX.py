@@ -2,7 +2,7 @@
 # Author: KozakFPV  
 # Copyright (C) 2021 by Nobumichi Kozawa
 
-version = "0.99"
+version = "1.0"
 
 from tkinter import *
 from tkinter import filedialog
@@ -126,11 +126,8 @@ def bOpenClicked():
 
 def openFileDialogGPX():
     global csvFilename
-    print(csvFilename)
     cfname = os.path.splitext(csvFilename)
-    print(cfname)
     gpxFile = filedialog.asksaveasfilename(defaultextension="gpx",initialfile=cfname[0])
-    print(">"+gpxFile+"<")
     return gpxFile
 
 def bDTClicked():
@@ -147,14 +144,12 @@ def bDTClicked():
         logMsg("Datetime error - no update")
 
 def bExportGPXClicked():
-    #print(cboxLogseq.current(), cboxLogseq.get())
     if (len(logSeq) == 1):
         exportGPX(0, len(gpsData))
     else:
         c = cboxLogseq.current()
         if (c < 0):
             return
-        print("logSeq: "+str(c)+" len"+str(len(logSeq)))
         s = logSeq[c]
         if ((c >= 0) and (c + 1) < len(logSeq)):
             e = logSeq[c + 1]
@@ -296,7 +291,6 @@ def updateTimestamp(y, m, d, h, min, s):
         logSeqUpdate()
 
 def exportGPX(s, e):
-    #print(s,e)
     gpx = gpxpy.gpx.GPX()
     gpx_track = gpxpy.gpx.GPXTrack()
     gpx.tracks.append(gpx_track)
@@ -317,14 +311,10 @@ def exportGPX(s, e):
         gpx_segment.points.append(gtp)
         i += 1
 
-    print(gpx.to_xml())
-    print(rbVar.get())
     gpxFilename = openFileDialogGPX()
     if (gpxFilename != ""):
         with open(gpxFilename, "w") as f:
             f.write(gpx.to_xml(version=rbVar.get()))
-    else:
-        print("not write")
 
 if __name__ == "__main__":
     main()

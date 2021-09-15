@@ -32,7 +32,7 @@ lOpenTXLog = ttk.Label(frame, text="OpenTX Log: ")
 fMsg = ttk.Frame(frame, padding=10)
 txtMsg = Text(fMsg, height=15, width=80)
 fLogseq = ttk.Frame(frame)
-cboxLogseq = ttk.Combobox(fLogseq,state='readonly')
+cboxLogseq = ttk.Combobox(fLogseq, state='readonly', width=27)
 
 rbVar = StringVar()
 

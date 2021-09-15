@@ -44,31 +44,26 @@ svMin = StringVar()
 svSec = StringVar()
 
 def main():
-    #root = Tk()
+    style = ttk.Style()
+    style.theme_use('alt')  # to avoid MacOS Dark mode issue with default ttk thema 'aqua'
     root.title('OpenTX2GPX')
-    #frame = ttk.Frame(root, padding=10)
-    #frame.grid(sticky=(N+W+S+E))
     frame.pack()
 
     btn = ttk.Button(
         frame, text='OpenTX Log', width=15,
         command=bOpenClicked)
     btn.pack()
-#    btn.grid(row=0,column=0,columnspan=3)
 
     lOpenTXLog.pack(anchor=W)
-    #lOpenTXLog.grid(row=1,column=0,sticky=(W))
 
     fDT = ttk.Frame(frame)
     fDT.pack(anchor=W)
 
     lDT = ttk.Label(fDT, text="Timestamp: YYYY")
     lDT.pack(side=LEFT)
-    #lDT.grid(row=2,column=0,sticky=(W))
 
     eYYYY = ttk.Entry(fDT, textvariable=svYYYY, width=4)
     eYYYY.pack(side=LEFT)
-    #    eDT.grid(row=2,column=1,sticky=(W))
     lMM = ttk.Label(fDT, text=" MM")
     lMM.pack(side=LEFT)
     eMM = ttk.Entry(fDT, textvariable=svMM, width=2)
@@ -93,7 +88,6 @@ def main():
 
     bDT = ttk.Button(fDT, text="Update", command=bDTClicked)
     bDT.pack()
-#    bDT.grid(row=2, column=2)
     
     cboxLogseq.pack(side=LEFT)
     rbVar.set("1.1")
@@ -107,26 +101,18 @@ def main():
 
     lMsg = ttk.Label(frame,text="Messages:")
     lMsg.pack(anchor=W)
-#    lMsg.grid(row=3,column=0,sticky=(W))
-
     fMsg.pack(anchor=W)
-    #txtMsg = Text(frame, height=15, width=70)
-#    txtMsg.pack(side=LEFT)
     txtMsg.grid(row=0,column=0,sticky=(N, W, S, E))
-
     scrollbar = ttk.Scrollbar(
     fMsg,
     orient=VERTICAL,
     command=txtMsg.yview)
-#    scrollbar.pack(side=LEFT)
     scrollbar.grid(row=0,column=1,sticky=(N, S))
     txtMsg['yscrollcommand'] = scrollbar.set
-#    frame.pack()
- #   btn.pack(side=TOP)
-#    txtMsg.pack(side=BOTTOM)
- #   scrollbar.pack()
+
     lAuthor = ttk.Label(frame, text="V"+str(version)+" by KozakFPV")
     lAuthor.pack(anchor=E)
+
     root.mainloop()
 
 def bOpenClicked():

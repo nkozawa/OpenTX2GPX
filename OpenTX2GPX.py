@@ -18,7 +18,7 @@ import datetime
 flds = {'Date':-1,'Time':-1, 'GPS':-1, 'GSpd(kmh)':-1,'Alt(m)':-1,'Sats':-1}
 patDate = re.compile("\d{4}-\d{2}-\d{2}")
 patTime = re.compile("\d{2}:\d{2}:\d{2}\.\d+")
-patGPS = re.compile("\d+\.\d+ \d+\.\d+")
+patGPS = re.compile("-?\d+\.\d+ -?\d+\.\d+")
 patGSpd = re.compile("\d+\.\d+")
 patAlt = re.compile("-?\d+")
 patSats = re.compile("\d+")

@@ -4,6 +4,7 @@ OpenTX2GPX converts OpenTX Log file contains GPS telemetry data to GPX file.
 OpenTX2GPX reads timestamp, GPS coordinate, speed, altitude, number of GPS satelites from OpenTX log and exports to GPX track points.
 
 ## Setup
+https://github.com/nkozawa/OpenTX2GPX/releases
 ### Python environment
 If you have Python 3.x environment, just you need to do following.
 - pip install gpxpy

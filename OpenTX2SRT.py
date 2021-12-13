@@ -9,6 +9,7 @@ from srtFormat import srtFormat
 flds = {}
 patDate = re.compile("\d{4}-\d{2}-\d{2}")
 patTime = re.compile("\d{2}:\d{2}:\d{2}\.\d+")
+header = []
 logData = []
 logDT = []
 logSeq =  []
@@ -21,7 +22,7 @@ def main():
     ordrow = []
 
     for i in range(50):
-        crow.append([sg.Checkbox('',key='cItem'+str(i),enable_events=True)])
+        crow.append([sg.Checkbox('',key='cItem'+str(i),enable_events=True,visible = False)])
 
     for i in range(10):
         ordrow.append([sg.Text('',size=(20,1),key='otItem'+str(i)),sg.Button('^',key='bUp'+str(i),enable_events=True),sg.Button('v',key='bDown'+str(i),enable_events=True)])
@@ -33,11 +34,12 @@ def main():
         [sg.Frame('Order', ordrow)],
         [sg.Frame('Output Format', [[sg.Text('',key='sFormat')]])],
         [sg.Text('Timestamp: YYYY MM DD', size=(21,1), pad=((5,0),(0,0))), sg.InputText(size=(4,1), key='iYYYY', pad=((0,2),(0,0))), sg.InputText(size=(2,1), key='iMM', pad=((0,2),(0,0))), sg.InputText(size=(2,1), key='iDD', pad=((0,10),(0,0))), sg.Text(' HHMMSS', size=(7,1), pad=((5,0),(0,0))), sg.InputText(size=(2,1), key='iHH', pad=((0,2),(0,0))), sg.InputText(size=(2,1), key='iMIN', pad=((0,2),(0,0))), sg.InputText(size=(2,1), key='iSS', pad=((0,2),(0,0))), sg.Button('Update')],
-        [sg.Combo((), size=(30, 1), key='cLogSeq')]
+        [sg.Combo((), size=(30, 1), key='cLogSeq'), sg.Button('ExportSRT')]
     ]
 
     window = sg.Window('OpenTX2SRT', layout)
 
+    validLogFile = False
     while True:
         event, values = window.read()
         print(event, values)
@@ -45,6 +47,7 @@ def main():
             break
 
         elif event == 'tPath':                      # filename process
+            resetGui(window)
             print(">"+values['tPath']+"<")
             validLogFile = False
             window['tLog'].update("OpenTX Log: ")
@@ -72,24 +75,70 @@ def main():
         elif event[0:5] == 'bDown':
             itemOrderDown(window,event)
             outputFormat(window)
+        elif event == 'Update':
+            updateDT(window, values)
 
     window.close()
+
+def updateDT(window, values):
+    y = int(values['iYYYY'])
+    m = int(values['iMM'])
+    d = int(values['iDD'])
+    h = int(values['iHH'])
+    min = int(values['iMIN'])
+    s = int(values['iSS'])
+    if 1999 < y and y < 2100 and 0 < m and m < 13 and 0 < d and d < 32 and 0 <= h and h < 24 and 0 <= min and min < 60 and 0 <= s and s < 60: 
+        updateTimestamp(window, y, m, d, h, min, s)
+        logMsg("Update timestamp")
+    else:
+        logMsg("Datetime error - no update")
+
+def updateTimestamp(window, y, m, d, h, min, s):
+    global tdtFirst
+    if (len(logDT) > 0):
+        tdtFirst = datetime.datetime(y, m, d, h, min, s)
+        dtDiff = tdtFirst - logDT[0]
+        i = 0
+        while(i < len(logDT)):
+            logDT[i] = dtDiff + logDT[i]
+            i += 1
+        logSeqUpdate(window)
+        outputFormat(window)
+
+def resetGui(window):
+    global flds, header, logData, logDT, logSeq, itemSelectCount
+    for i in range(50):
+        window['cItem'+str(i)].update(False, text = '', visible = False)
+
+    for i in range(10):
+        window['otItem'+str(i)].update('')
+
+    window['cLogSeq'].update('', values = [])
+    window['sFormat'].update('')
+
+    flds = {}
+    header = []
+    logData = []
+    logDT = []
+    logSeq =  []
+    itemSelectCount = 0
 
 def outputFormat(window):
     sFormat = ""
     for i in range(itemSelectCount):
         logHeader = window['otItem'+str(i)].get()
-        if (logHeader == 'Date'):
+        if logHeader == 'Date':
             print(srtFormat['Date'])
             sFormat += logDT[i].strftime(srtFormat['Date']) + ' '
-        elif (logHeader == 'Time'):
+        elif logHeader == 'Time':
             sFormat += logDT[i].strftime(srtFormat['Time']) + ' '
         else:
-            if (logHeader in srtFormat):
+            if logHeader in srtFormat:
                 fmt = srtFormat[logHeader]
             else:
+                logMsg('Header item "'+logHeader+" is not found in srtFormat.py")
                 fmt = '{0}'
-            if (fmt == ''):
+            if fmt == '':
                 sFormat += logData[0][flds[logHeader]] + ' '
             else:
                 sFormat += fmt.format(logData[0][flds[logHeader]]) + ' '
@@ -97,24 +146,28 @@ def outputFormat(window):
 
 def itemOrderUp(window,event):
     i = int(event[3:len(event)])
-    if (0 < i and i < itemSelectCount):
+    if 0 < i and i < itemSelectCount:
         temp = window['otItem'+str(i-1)].get()
         window['otItem'+str(i-1)].update(window['otItem'+str(i)].get())
         window['otItem'+str(i)].update(temp)
 
 def itemOrderDown(window,event):
     i = int(event[5:len(event)])
-    if (i < itemSelectCount - 1):
+    if i < itemSelectCount - 1:
         temp = window['otItem'+str(i)].get()
         window['otItem'+str(i)].update(window['otItem'+str(i+1)].get())
         window['otItem'+str(i+1)].update(temp)
 
 def itemSelectEvent(window,event,values):
     global header, itemSelectCount
+    if len(header) == 0:
+        window[event].update(False)
+        return
+
     i = int(event[5:len(event)])
     print(header[i])
-    if (values[event]):
-        if (itemSelectCount > 9):
+    if values[event]:
+        if itemSelectCount > 9:
             window[event].update(False)
             return
         window['otItem'+str(itemSelectCount)].update(header[i])
@@ -126,7 +179,7 @@ def itemSelectEvent(window,event,values):
 def itemDeselect(window,values,hitem):
     global itemSelectCount
     for i in range(itemSelectCount):
-        if (hitem == window['otItem'+str(i)].get()):
+        if hitem == window['otItem'+str(i)].get():
             print('HIT ' + str(i))
             for j in range(i, itemSelectCount-1):
                 window['otItem'+str(j)].update(window['otItem'+str(j+1)].get())
@@ -136,8 +189,8 @@ def itemSelection(window):
     global header
 
     for i in range(50):
-        if (i < len(header)):
-            window['cItem'+str(i)].update(text = header[i])
+        if i < len(header):
+            window['cItem'+str(i)].update(text = header[i], visible = True)
         else:
             window['cItem'+str(i)].update(visible = False)
 
@@ -150,10 +203,10 @@ def logSeqUpdate(window):
     window['iSS'].update(tdtFirst.strftime("%S"))
     logSeqTD = []
     totalDuration = logDT[len(logDT)-1] - logDT[0]
-    if (len(logSeq) > 1):
+    if len(logSeq) > 1:
         i = 0
         for s in logSeq:
-            if (i + 1 < len(logSeq)):
+            if i + 1 < len(logSeq):
                 dur = tdelta2str(logDT[logSeq[i+1]-1] - logDT[s])
             else:
                 dur = tdelta2str(logDT[len(logDT)-1] - logDT[s])
@@ -193,20 +246,20 @@ def openTXLog(logfilename):
             # validation process, just skip no valid data
             date = row[flds['Date']]
             result = re.match(patDate,date)
-            if (result is None):
+            if result is None:
                 valErrorMsg(logNum,"Date",date)
                 continue
             time = row[flds['Time']]
             result = re.match(patTime,time)
-            if (result is None):
+            if result is None:
                 valErrorMsg(logNum,"Time",time)
                 continue
 
             tdt = datetime.datetime.strptime(date+" "+time, '%Y-%m-%d %H:%M:%S.%f')
-            if (0 == i):
+            if 0 == i:
                 tdtFirst = tdt
                 logSeq.append(i)
-            elif ((tdt - logDT[i - 1]) > tdtDelta60):
+            elif (tdt - logDT[i - 1]) > tdtDelta60:
                 logSeq.append(i)
                 print(i)
 

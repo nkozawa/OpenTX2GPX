@@ -1,12 +1,12 @@
 srtFormat = {
     'Date' : '%Y/%m/%d',    # datetime.srtftime
     'Time' : '%H:%M:%S',    # datetime.srtftime
-    'x1RSS(dB)' : '{0}dB',
+    '1RSS(dB)' : '{0}dB',
     '2RSS(dB)' : '{0}dB',
     'RQly(%)' : '{0}%',
     'RSNR(dB)' : '{0}dB',
     'ANT' : '',
-    'RFMD' : '',
+#    'RFMD' : '',
     'TPWR(mW)' : '{0}mW',
     'TRSS(dB)' : '{0}dB',
     'TQly(%)' :  '{0}%',
@@ -20,6 +20,7 @@ srtFormat = {
     'Bat_(%)' : '{0}%',
     'FM' : '',
     'GPS' : '',
+    'GSpd(kmh)' : '{0}Km/h',
     'Hdg(@)' : '',
     'Alt(m)' : 'Alt:{0}m',
     'Sats' : 'Sats:{0}',
@@ -34,5 +35,5 @@ srtFormat = {
     'SE' : '',
     'SF' : '',
     'LSW' : '',
-    'TxBat(V)' : ''
+    'TxBat(V)' : '{0}V'
 }

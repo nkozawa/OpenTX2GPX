@@ -15,6 +15,8 @@ logDT = []
 logSeq =  []
 tdtFirst = datetime.date.today()
 itemSelectCount = 0
+ordLogHNum = []
+ordLogFormat = []
 
 def main():
     sg.theme('SystemDefault')
@@ -77,8 +79,56 @@ def main():
             outputFormat(window)
         elif event == 'Update':
             updateDT(window, values)
+        elif event == 'ExportSRT':
+            exportSRTEvent(window, values)
 
     window.close()
+
+
+def exportSRTEvent(window, values):
+    print('logSeq:'+str(len(logSeq)))
+    if (len(logSeq) < 1):
+        return
+    elif (len(logSeq) == 1):
+        exportSRT(0, len(logData))
+    else:
+        c = values['cLogSeq'].split(':')
+        ic = int(c[0]) - 1
+        if (ic < 0):
+            return
+        s = logSeq[ic]
+        if ((ic >= 0) and (ic + 1) < len(logSeq)):
+            e = logSeq[ic + 1]
+        else:
+            e = len(logData)
+        exportSRT(s, e)    
+
+def exportSRT(s, e):
+    print(str(s)+','+str(e))
+    fname = sg.popup_get_file('Export SRT', save_as=True, file_types=(('Subscript', '.srt')))
+    if fname is None or fname == '':
+        return
+    fDt = logDT[s]
+    prev = '00:00:00,000'
+    i = s + 1
+    c = 0
+    while i < e:
+        elpsDT = logDT[i] - fDt
+        e1 = str(elpsDT).split(':')
+        e2 = e1[2].split('.')
+        if len(e2) > 1:
+            e3 = e2[1][0:3]
+        else:
+            e3 = '000'
+        current = '{0:02d}:{1}:{2},{3}'.format(int(e1[0]),e1[1],e2[0],e3)
+        print(c)
+        print(prev + ' ---> ' + current)
+        prev = current
+        print(getFormatedText(i))
+        print()
+        i += 1
+        c += 1
+    print('>'+fname+'<')
 
 def updateDT(window, values):
     y = int(values['iYYYY'])
@@ -124,25 +174,35 @@ def resetGui(window):
     itemSelectCount = 0
 
 def outputFormat(window):
+    global ordLogHNum, ordLogFormat, itemSelectCount
     sFormat = ""
+    ordLogHNum = []
+    ordLogFormat = []
     for i in range(itemSelectCount):
         logHeader = window['otItem'+str(i)].get()
-        if logHeader == 'Date':
-            print(srtFormat['Date'])
-            sFormat += logDT[i].strftime(srtFormat['Date']) + ' '
-        elif logHeader == 'Time':
-            sFormat += logDT[i].strftime(srtFormat['Time']) + ' '
+        ordLogHNum.append(flds[logHeader])
+        if logHeader in srtFormat:
+            fmt = srtFormat[logHeader]
         else:
-            if logHeader in srtFormat:
-                fmt = srtFormat[logHeader]
-            else:
-                logMsg('Header item "'+logHeader+" is not found in srtFormat.py")
-                fmt = '{0}'
+            logMsg('Header item "'+logHeader+" is not found in srtFormat.py")
+            fmt = '{0}'
+        ordLogFormat.append(fmt)
+    window['sFormat'].update(getFormatedText(0))
+
+
+def getFormatedText(n):
+    global ordLogHNum, ordLogFormat, itemSelectCount
+    sFormat = ""
+    for i in range(itemSelectCount):
+        fmt = ordLogFormat[i]
+        if 2 > ordLogHNum[i]:
+            sFormat += logDT[n].strftime(fmt) + ' '
+        else:
             if fmt == '':
-                sFormat += logData[0][flds[logHeader]] + ' '
+                sFormat += logData[n][ordLogHNum[i]] + ' '
             else:
-                sFormat += fmt.format(logData[0][flds[logHeader]]) + ' '
-    window['sFormat'].update(sFormat)
+                sFormat += fmt.format(logData[n][ordLogHNum[i]]) + ' '
+    return sFormat
 
 def itemOrderUp(window,event):
     i = int(event[3:len(event)])
@@ -210,12 +270,12 @@ def logSeqUpdate(window):
                 dur = tdelta2str(logDT[logSeq[i+1]-1] - logDT[s])
             else:
                 dur = tdelta2str(logDT[len(logDT)-1] - logDT[s])
-            logSeqTD.append(logDT[s].strftime('%Y/%m/%d %H:%M:%S <'+dur+'>'))
+            logSeqTD.append(logDT[s].strftime(str(i+1)+': %Y/%m/%d %H:%M:%S <'+dur+'>'))
             i += 1
         window['cLogSeq'].update(values = logSeqTD)
-        window['cLogSeq'].update(str(len(logSeq))+" sessions <"+tdelta2str(totalDuration)+">")
+        window['cLogSeq'].update('0: '+str(len(logSeq))+" sessions <"+tdelta2str(totalDuration)+">")
     else:
-        window['cLogSeq'].update(logDT[0][0].strftime('%Y/%m/%d %H:%M:%S')+" <"+tdelta2str(totalDuration)+">")
+        window['cLogSeq'].update(logDT[0][0].strftime('0: %Y/%m/%d %H:%M:%S')+" <"+tdelta2str(totalDuration)+">")
 
 def logMsg(msg):
     #txtMsg.insert(END, msg+"\n")
@@ -276,7 +336,8 @@ def tdelta2str(tdelta):
     if (h == 0):
         return "%02d:%02d"%(m, s)
     else:
-        return "%02d:%02d:%02d"%(h, m, s)   
+        return "%02d:%02d:%02d"%(h, m, s)
+
 
 if __name__ == "__main__":
     main()

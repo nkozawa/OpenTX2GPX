@@ -5,6 +5,8 @@ import datetime
 import re
 
 from srtFormat import srtFormat
+version = 'V0.1'
+messageLevel = 3
 
 flds = {}
 patDate = re.compile("\d{4}-\d{2}-\d{2}")
@@ -24,10 +26,12 @@ def main():
     ordrow = []
 
     for i in range(50):
-        crow.append([sg.Checkbox('',key='cItem'+str(i),enable_events=True,visible = False)])
+        crow.append([sg.Checkbox('',key='cItem'+str(i),enable_events=True)])
+
+    sepvalues = ['""','" "','"  "','" / "','" | "','"\\n"']
 
     for i in range(10):
-        ordrow.append([sg.Text('',size=(20,1),key='otItem'+str(i)),sg.Button('^',key='bUp'+str(i),enable_events=True),sg.Button('v',key='bDown'+str(i),enable_events=True)])
+        ordrow.append([sg.Text('',size=(20,1),key='otItem'+str(i)),sg.Button('^',key='bUp'+str(i),enable_events=True),sg.Button('v',key='bDown'+str(i),enable_events=True),sg.Combo(sepvalues,default_value='" "',key='ocItem'+str(i),enable_events=True)])
 
     layout = [
         [sg.Text('Pathname:'), sg.InputText(key='tPath', enable_events=True), sg.FileBrowse(file_types=(('CSV', '*.CSV'), ('CSV', '*.csv'),))],
@@ -36,7 +40,8 @@ def main():
         [sg.Frame('Order', ordrow)],
         [sg.Frame('Output Format', [[sg.Text('',key='sFormat')]])],
         [sg.Text('Timestamp: YYYY MM DD', size=(21,1), pad=((5,0),(0,0))), sg.InputText(size=(4,1), key='iYYYY', pad=((0,2),(0,0))), sg.InputText(size=(2,1), key='iMM', pad=((0,2),(0,0))), sg.InputText(size=(2,1), key='iDD', pad=((0,10),(0,0))), sg.Text(' HHMMSS', size=(7,1), pad=((5,0),(0,0))), sg.InputText(size=(2,1), key='iHH', pad=((0,2),(0,0))), sg.InputText(size=(2,1), key='iMIN', pad=((0,2),(0,0))), sg.InputText(size=(2,1), key='iSS', pad=((0,2),(0,0))), sg.Button('Update')],
-        [sg.Combo((), size=(30, 1), key='cLogSeq'), sg.Button('ExportSRT')]
+        [sg.Combo((), size=(30, 1), key='cLogSeq'), sg.Button('ExportSRT')],
+        [sg.Text(version+' by KozakFPV')]
     ]
 
     window = sg.Window('OpenTX2SRT', layout)
@@ -44,26 +49,24 @@ def main():
     validLogFile = False
     while True:
         event, values = window.read()
-        print(event, values)
+        logMsg(3, str(event)+' '+str(values))
         if event == sg.WIN_CLOSED:
             break
 
         elif event == 'tPath':                      # filename process
             resetGui(window)
-            print(">"+values['tPath']+"<")
             validLogFile = False
             window['tLog'].update("OpenTX Log: ")
             if (len(values['tPath']) > 0):
                 otname = os.path.basename(values['tPath'])
                 otext = os.path.splitext(otname)
-                print(otext)
                 if (otext[1].lower() == '.csv'):
-                    print(otname)
+                    logMsg(2, otname)
                     window['tLog'].update("OpenTX Log: " + otname)
                     validLogFile = True
         elif event == 'bProc':                      # open log file
             if (validLogFile):
-                print("opening log file...")
+                logMsg(2, "opening log file...")
                 openTXLog(values['tPath'])
                 itemSelection(window)
                 logSeqUpdate(window)
@@ -81,12 +84,13 @@ def main():
             updateDT(window, values)
         elif event == 'ExportSRT':
             exportSRTEvent(window, values)
+        elif event[0:6] == 'ocItem':
+            outputFormat(window)
 
     window.close()
 
 
 def exportSRTEvent(window, values):
-    print('logSeq:'+str(len(logSeq)))
     if (len(logSeq) < 1):
         return
     elif (len(logSeq) == 1):
@@ -101,47 +105,60 @@ def exportSRTEvent(window, values):
             e = logSeq[ic + 1]
         else:
             e = len(logData)
-        exportSRT(s, e)    
+        exportSRT(window, s, e)    
 
-def exportSRT(s, e):
-    print(str(s)+','+str(e))
+def exportSRT(window, s, e):
     fname = sg.popup_get_file('Export SRT', save_as=True, file_types=(('Subscript', '.srt')))
     if fname is None or fname == '':
         return
     fDt = logDT[s]
     prev = '00:00:00,000'
     i = s + 1
-    c = 0
-    while i < e:
-        elpsDT = logDT[i] - fDt
-        e1 = str(elpsDT).split(':')
-        e2 = e1[2].split('.')
-        if len(e2) > 1:
-            e3 = e2[1][0:3]
-        else:
-            e3 = '000'
-        current = '{0:02d}:{1}:{2},{3}'.format(int(e1[0]),e1[1],e2[0],e3)
-        print(c)
-        print(prev + ' ---> ' + current)
-        prev = current
-        print(getFormatedText(i))
-        print()
-        i += 1
-        c += 1
-    print('>'+fname+'<')
+    c = 1
+    with open(fname,'w') as f:
+        while i < e:
+            elpsDT = logDT[i] - fDt
+            e1 = str(elpsDT).split(':')
+            e2 = e1[2].split('.')
+            if len(e2) > 1:
+                e3 = e2[1][0:3]
+            else:
+                e3 = '000'
+            current = '{0:02d}:{1}:{2},{3}'.format(int(e1[0]),e1[1],e2[0],e3)
+            f.write(str(c) + "\n")
+            f.write(prev + ' --> ' + current + "\n")
+#            print(c)
+#            print(prev + ' --> ' + current)
+            prev = current
+            fmttext = getFormatedText(window,i).split('\\n')
+            for ftxt in fmttext:
+                f.write(ftxt + "\n")
+            f.write("\n")
+#            print(getFormatedText(i))
+#            print()
+            i += 1
+            c += 1
+    logMsg(1, 'Exported SRT file: '+fname)
 
 def updateDT(window, values):
-    y = int(values['iYYYY'])
-    m = int(values['iMM'])
-    d = int(values['iDD'])
-    h = int(values['iHH'])
-    min = int(values['iMIN'])
-    s = int(values['iSS'])
-    if 1999 < y and y < 2100 and 0 < m and m < 13 and 0 < d and d < 32 and 0 <= h and h < 24 and 0 <= min and min < 60 and 0 <= s and s < 60: 
-        updateTimestamp(window, y, m, d, h, min, s)
-        logMsg("Update timestamp")
-    else:
-        logMsg("Datetime error - no update")
+    sy = values['iYYYY']
+    sm = values['iMM']
+    sd = values['iDD']
+    sh = values['iHH']
+    smin = values['iMIN']
+    ss = values['iSS']
+    if sy.isdecimal() and sm.isdecimal() and sd.isdecimal() and sh.isdecimal() and smin.isdecimal() and ss.isdecimal():
+        y = int(sy)
+        m = int(sm)
+        d = int(sd)
+        h = int(sh)
+        min = int(smin)
+        s = int(ss)
+        if 1999 < y and y < 2100 and 0 < m and m < 13 and 0 < d and d < 32 and 0 <= h and h < 24 and 0 <= min and min < 60 and 0 <= s and s < 60: 
+            updateTimestamp(window, y, m, d, h, min, s)
+            logMsg(2, "Update timestamp")
+        else:
+            logMsg(1, "Datetime error - no update")
 
 def updateTimestamp(window, y, m, d, h, min, s):
     global tdtFirst
@@ -172,6 +189,13 @@ def resetGui(window):
     logDT = []
     logSeq =  []
     itemSelectCount = 0
+    window['iYYYY'].update(tdtFirst.strftime(""))
+    window['iMM'].update(tdtFirst.strftime(""))
+    window['iDD'].update(tdtFirst.strftime(""))
+    window['iHH'].update(tdtFirst.strftime(""))
+    window['iMIN'].update(tdtFirst.strftime(""))
+    window['iSS'].update(tdtFirst.strftime(""))
+
 
 def outputFormat(window):
     global ordLogHNum, ordLogFormat, itemSelectCount
@@ -184,24 +208,26 @@ def outputFormat(window):
         if logHeader in srtFormat:
             fmt = srtFormat[logHeader]
         else:
-            logMsg('Header item "'+logHeader+" is not found in srtFormat.py")
+            logMsg(1, 'Header item "'+logHeader+" is not found in srtFormat.py")
             fmt = '{0}'
         ordLogFormat.append(fmt)
-    window['sFormat'].update(getFormatedText(0))
+    window['sFormat'].update(getFormatedText(window,0))
 
 
-def getFormatedText(n):
+def getFormatedText(window,n):
     global ordLogHNum, ordLogFormat, itemSelectCount
     sFormat = ""
     for i in range(itemSelectCount):
         fmt = ordLogFormat[i]
+        sepa = window['ocItem'+str(i)].get()
+        sepa = sepa[1:len(sepa)-1]
         if 2 > ordLogHNum[i]:
-            sFormat += logDT[n].strftime(fmt) + ' '
+            sFormat += logDT[n].strftime(fmt) + sepa
         else:
             if fmt == '':
-                sFormat += logData[n][ordLogHNum[i]] + ' '
+                sFormat += logData[n][ordLogHNum[i]] + sepa
             else:
-                sFormat += fmt.format(logData[n][ordLogHNum[i]]) + ' '
+                sFormat += fmt.format(logData[n][ordLogHNum[i]]) + sepa
     return sFormat
 
 def itemOrderUp(window,event):
@@ -225,7 +251,6 @@ def itemSelectEvent(window,event,values):
         return
 
     i = int(event[5:len(event)])
-    print(header[i])
     if values[event]:
         if itemSelectCount > 9:
             window[event].update(False)
@@ -240,7 +265,6 @@ def itemDeselect(window,values,hitem):
     global itemSelectCount
     for i in range(itemSelectCount):
         if hitem == window['otItem'+str(i)].get():
-            print('HIT ' + str(i))
             for j in range(i, itemSelectCount-1):
                 window['otItem'+str(j)].update(window['otItem'+str(j+1)].get())
             window['otItem'+str(itemSelectCount-1)].update('')
@@ -277,13 +301,14 @@ def logSeqUpdate(window):
     else:
         window['cLogSeq'].update(logDT[0][0].strftime('0: %Y/%m/%d %H:%M:%S')+" <"+tdelta2str(totalDuration)+">")
 
-def logMsg(msg):
+def logMsg(l, msg):
     #txtMsg.insert(END, msg+"\n")
     #txtMsg.see(END)
-    print(msg)
+    if l <= messageLevel:
+        print(msg)
 
 def valErrorMsg(lineNum,hdr,data):
-    logMsg("Parse error, Line:"+str(lineNum)+" Field:"+hdr+" Data:"+data)
+    logMsg(1, "Parse error, Line:"+str(lineNum)+" Field:"+hdr+" Data:"+data)
 
 def openTXLog(logfilename):
 #    cleanupUI()
@@ -291,8 +316,8 @@ def openTXLog(logfilename):
     date = time = ""
     with open(logfilename, encoding='utf8', newline='') as f:
         openTXLog = csv.reader(f, delimiter=",", doublequote=True, lineterminator="\r\n", quotechar='"', skipinitialspace=True)
+
         header = next(openTXLog)
-        print(header)
         i = 0
         for hdr in header:
             flds[hdr] = i
@@ -321,7 +346,6 @@ def openTXLog(logfilename):
                 logSeq.append(i)
             elif (tdt - logDT[i - 1]) > tdtDelta60:
                 logSeq.append(i)
-                print(i)
 
             logData.append(row)
             logDT.append(tdt)

@@ -1,4 +1,5 @@
 srtFormat = {
+    'Elaps' : 'Elpas time:{0}', # This is special header created by OpenTX2SRT
     'Date' : '%Y/%m/%d',    # datetime.srtftime
     'Time' : '%H:%M:%S',    # datetime.srtftime
     '1RSS(dB)' : '{0}dB',

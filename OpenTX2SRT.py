@@ -5,8 +5,13 @@ import datetime
 import re
 
 from srtFormat import srtFormat
-version = 'V0.1'
-messageLevel = 3
+
+#二回procでseqがダブる
+
+version = 'V0.2'
+messageLevel = 2
+
+sepachars = ['""','" "','"  "','" / "','" | "','"\\n"']
 
 flds = {}
 patDate = re.compile("\d{4}-\d{2}-\d{2}")
@@ -14,6 +19,7 @@ patTime = re.compile("\d{2}:\d{2}:\d{2}\.\d+")
 header = []
 logData = []
 logDT = []
+logElaps = []
 logSeq =  []
 tdtFirst = datetime.date.today()
 itemSelectCount = 0
@@ -28,10 +34,8 @@ def main():
     for i in range(50):
         crow.append([sg.Checkbox('',key='cItem'+str(i),enable_events=True)])
 
-    sepvalues = ['""','" "','"  "','" / "','" | "','"\\n"']
-
     for i in range(10):
-        ordrow.append([sg.Text('',size=(20,1),key='otItem'+str(i)),sg.Button('^',key='bUp'+str(i),enable_events=True),sg.Button('v',key='bDown'+str(i),enable_events=True),sg.Combo(sepvalues,default_value='" "',key='ocItem'+str(i),enable_events=True)])
+        ordrow.append([sg.Text('',size=(20,1),key='otItem'+str(i)),sg.Button('^',key='bUp'+str(i),enable_events=True),sg.Button('v',key='bDown'+str(i),enable_events=True),sg.Combo(sepachars,default_value='" "',key='ocItem'+str(i),enable_events=True)])
 
     layout = [
         [sg.Text('Pathname:'), sg.InputText(key='tPath', enable_events=True), sg.FileBrowse(file_types=(('CSV', '*.CSV'), ('CSV', '*.csv'),))],
@@ -221,7 +225,9 @@ def getFormatedText(window,n):
         fmt = ordLogFormat[i]
         sepa = window['ocItem'+str(i)].get()
         sepa = sepa[1:len(sepa)-1]
-        if 2 > ordLogHNum[i]:
+        if ordLogHNum[i] < 0 :
+            sFormat += fmt.format(logElaps[n]) + sepa
+        elif ordLogHNum[i] < 2 :
             sFormat += logDT[n].strftime(fmt) + sepa
         else:
             if fmt == '':
@@ -279,6 +285,7 @@ def itemSelection(window):
             window['cItem'+str(i)].update(visible = False)
 
 def logSeqUpdate(window):
+    global logSeqTD
     window['iYYYY'].update(tdtFirst.strftime("%Y"))
     window['iMM'].update(tdtFirst.strftime("%m"))
     window['iDD'].update(tdtFirst.strftime("%d"))
@@ -312,21 +319,27 @@ def valErrorMsg(lineNum,hdr,data):
 
 def openTXLog(logfilename):
 #    cleanupUI()
-    global header
+    global header, flds, tdtFirst, logSeq, logData, logDT, logElaps
     date = time = ""
+    flds = {}
+    logSeq = []
+    logData = []
+    logDT = []
+    logElaps = []
     with open(logfilename, encoding='utf8', newline='') as f:
         openTXLog = csv.reader(f, delimiter=",", doublequote=True, lineterminator="\r\n", quotechar='"', skipinitialspace=True)
 
-        header = next(openTXLog)
+        header = ['Elaps'] + next(openTXLog)
+#        header = next(openTXLog)
+
         i = 0
         for hdr in header:
-            flds[hdr] = i
+            flds[hdr] = i - 1
             i += 1
         i = logNum = 0
         tdtDelta60 = datetime.timedelta(0,60)
 
         for row in openTXLog:
-            global tdtFirst
             logNum += 1
             # validation process, just skip no valid data
             date = row[flds['Date']]
@@ -343,13 +356,14 @@ def openTXLog(logfilename):
             tdt = datetime.datetime.strptime(date+" "+time, '%Y-%m-%d %H:%M:%S.%f')
             if 0 == i:
                 tdtFirst = tdt
+                tdtSF = tdt
                 logSeq.append(i)
             elif (tdt - logDT[i - 1]) > tdtDelta60:
+                tdtSF = tdt
                 logSeq.append(i)
-
             logData.append(row)
             logDT.append(tdt)
-            
+            logElaps.append(tdelta2str(tdt - tdtSF))
             i += 1
 
 def tdelta2str(tdelta):

@@ -8,7 +8,7 @@ https://github.com/nkozawa/OpenTX2GPX/releases
 ### Python environment
 If you have Python 3.x environment, just you need to do following.
 - pip install gpxpy
-- python3 OpenTXGPX.py
+- python3 OpenTX2GPX.py
 ### MacOS
 Download and extract OpenTX2GPXMac.zip. OpenTX2GPX is MacOS executable.
 ### Windows

@@ -6,9 +6,7 @@ import re
 
 from srtFormat import srtFormat
 
-#二回procでseqがダブる
-
-version = 'V0.2'
+version = 'V1.0'
 messageLevel = 2
 
 sepachars = ['""','" "','"  "','" / "','" | "','"\\n"']
@@ -112,7 +110,7 @@ def exportSRTEvent(window, values):
         exportSRT(window, s, e)    
 
 def exportSRT(window, s, e):
-    fname = sg.popup_get_file('Export SRT', save_as=True, file_types=(('Subscript', '.srt')))
+    fname = sg.popup_get_file('Export SRT', save_as=True, file_types=(('SRT', '.srt'),('SRT', '.SRT')))
     if fname is None or fname == '':
         return
     fDt = logDT[s]

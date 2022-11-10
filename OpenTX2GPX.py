@@ -42,6 +42,7 @@ svDD = StringVar()
 svHr = StringVar()
 svMin = StringVar()
 svSec = StringVar()
+heightOffset = IntVar()
 
 def main():
     style = ttk.Style()
@@ -55,6 +56,14 @@ def main():
     btn.pack()
 
     lOpenTXLog.pack(anchor=W)
+
+    fHO = ttk.Frame(frame)
+    fHO.pack(anchor=W)
+
+    lMM = ttk.Label(fHO, text="Height offset: ")
+    lMM.pack(side=LEFT)
+    eMM = ttk.Entry(fHO, textvariable=heightOffset, width=5)
+    eMM.pack(side=LEFT)
 
     fDT = ttk.Frame(frame)
     fDT.pack(anchor=W)
@@ -302,6 +311,8 @@ def exportGPX(s, e):
         lon = gpsData[i][1]
         lat = gpsData[i][2]
         alt = gpsData[i][4]
+        if (heightOffset.get() > 0):
+            alt = str(int(alt) + heightOffset.get())
         gtp = gpxpy.gpx.GPXTrackPoint(lat, lon, alt)
         gtp.time = gpsData[i][0]
         speed = float(gpsData[i][3]) * 1000 / 3600

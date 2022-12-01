@@ -2,7 +2,7 @@
 # Author: KozakFPV  
 # Copyright (C) 2021 by Nobumichi Kozawa
 
-version = "1.0"
+version = "1.1"
 
 from tkinter import *
 from tkinter import filedialog
@@ -46,7 +46,8 @@ heightOffset = IntVar()
 
 def main():
     style = ttk.Style()
-    style.theme_use('alt')  # to avoid MacOS Dark mode issue with default ttk thema 'aqua'
+# comment out following line because 'alt' does not work with MacOS Venture and works with default theme well
+#    style.theme_use('alt')  # to avoid MacOS Dark mode issue with default ttk thema 'aqua'
     root.title('OpenTX2GPX')
     frame.pack()
 
